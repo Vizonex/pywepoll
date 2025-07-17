@@ -5,7 +5,6 @@ from libc.stdint cimport uintptr_t as uintptr_t
 
 cdef extern from "wepoll/wepoll.h" nogil:
     enum EPOLL_EVENTS:
-        # Aliasing so that python gets the real name
         EPOLLIN  = 1
         EPOLLPRI = 2
         EPOLLOUT = 4
