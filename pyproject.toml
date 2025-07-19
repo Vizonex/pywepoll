@@ -1,0 +1,19 @@
+[project]
+name = "wepoll"
+version = "0.1.0"
+authors = [
+    { name = "Vizonex", email = "VizonexBusiness@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.cibuildwheel]
+build-frontend = "build"
+
+[build-system]
+requires = ["setuptools", "cython", "wheel"]
+
+[tool.setuptools]
+zip-safe = false
+packages = ['wepoll']
+
