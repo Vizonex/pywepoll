@@ -23,32 +23,8 @@ cdef extern from "Python.h":
 
 // 3.13 is cursed...
 #if (PY_VERSION_HEX >= 0x030d00f0)
-   
-typedef enum {
-    // Round towards minus infinity (-inf).
-    // For example, used to read a clock.
-    _PyTime_ROUND_FLOOR=0,
-
-    // Round towards infinity (+inf).
-    // For example, used for timeout to wait "at least" N seconds.
-    _PyTime_ROUND_CEILING=1,
-
-    // Round to nearest with ties going to nearest even integer.
-    // For example, used to round from a Python float.
-    _PyTime_ROUND_HALF_EVEN=2,
-
-    // Round away from zero
-    // For example, used for timeout. _PyTime_ROUND_CEILING rounds
-    // -1e-9 to 0 milliseconds which causes bpo-31786 issue.
-    // _PyTime_ROUND_UP rounds -1e-9 to -1 millisecond which keeps
-    // the timeout sign as expected. select.poll(timeout) must block
-    // for negative values.
-    _PyTime_ROUND_UP=3,
-
-    // _PyTime_ROUND_TIMEOUT (an alias for _PyTime_ROUND_UP) should be
-    // used for timeouts.
-    _PyTime_ROUND_TIMEOUT = _PyTime_ROUND_UP
-} _PyTime_round_t;
+/* I hate this... */
+#include <fix_313.h>
  
 #endif
 
