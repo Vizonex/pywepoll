@@ -25,43 +25,38 @@ typedef _PyTime_round_t PyTime_round_t;
 
 /* From Python 3.14 Brought here for backwards comptability*/
 
-#if (PY_VERSION_HEX < 0x030d00f0)
-    #ifndef PyTime_MAX
-        #define PyTime_MAX LLONG_MAX
-    #endif
-    #ifndef PyTime_MIN
-        #define PyTime_MIN LLONG_MIN
-    #endif
-
-    /* 3.12 or under */
-    static inline int
-    compat_pytime_add(int64_t *t1, int64_t t2)
-    {
-        if (t2 > 0 && *t1 > PyTime_MAX - t2) {
-            *t1 = PyTime_MAX;
-            return -1;
-        }
-        else if (t2 < 0 && *t1 < PyTime_MIN - t2) {
-            *t1 = PyTime_MIN;
-            return -1;
-        }
-        else {
-            *t1 += t2;
-            return 0;
-        }
-    }
-    int64_t
-    _PyTime_Add(int64_t t1, int64_t t2)
-    {
-        (void)compat_pytime_add(&t1, t2);
-        return t1;
-    }
-    #define PyTime_Add _PyTime_Add
-#else 
-    #define PyTime_Add _PyTime_Add
+#ifndef PyTime_MAX
+    #define PyTime_MAX LLONG_MAX
+#endif
+#ifndef PyTime_MIN
+    #define PyTime_MIN LLONG_MIN
 #endif
 
-    """
+static inline int
+compat_pytime_add(int64_t *t1, int64_t t2)
+{
+    if (t2 > 0 && *t1 > PyTime_MAX - t2) {
+        *t1 = PyTime_MAX;
+        return -1;
+    }
+    else if (t2 < 0 && *t1 < PyTime_MIN - t2) {
+        *t1 = PyTime_MIN;
+        return -1;
+    }
+    else {
+        *t1 += t2;
+        return 0;
+    }
+}
+
+int64_t
+_PyTime_Add(int64_t t1, int64_t t2)
+{
+    (void)compat_pytime_add(&t1, t2);
+    return t1;
+}
+#define PyTime_Add _PyTime_Add
+"""
    
     enum _PyTime_round_t:
         # Round towards minus infinity (-inf).
