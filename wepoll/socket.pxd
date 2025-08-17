@@ -34,6 +34,7 @@ typedef int SOCKET_T;
 
 /* Didn't need to recast the entire object only the parts that I thought were useful... */
 typedef struct {
+    PyObject_HEAD
     SOCKET_T sock_fd;
     int sock_family;
     int sock_type;
@@ -70,6 +71,15 @@ static inline int SocketType_CheckExact(PyObject* obj) {
 static inline int SocketType_Check(PyObject* obj) {
     return SocketType_CheckExact(obj) || PyObject_TypeCheck(obj,  __cython_socket_api->Sock_Type);
 }
+
+static inline int Socket_GetFileDescriptor(PyObject* sock, uintptr_t *fd){
+    if (!SocketType_Check(sock)){
+        PyErr_SetString(PyExc_TypeError, "socket type is required");
+        return -1;
+    }
+    *fd = ((PySocketSockObject*)sock)->sock_fd;
+    return 0;
+}
     """
     ctypedef uintptr_t SOCKET_T
 
@@ -89,15 +99,13 @@ static inline int SocketType_Check(PyObject* obj) {
         PyObject *error
         PyObject *timeout_error
     
+    int Socket_GetFileDescriptor(object sock, uintptr_t *fd)
 
 
     ctypedef class _socket.socket [object PySocketSockObject, check_size ignore]:
         cdef:
             # Reason for making the majortiy of these constant is to prevent fiddling
             # with sockets from python's end.
-            @property
-            cdef inline const SOCKET_T fd(self):
-                return self.sock_fd
 
             @property
             cdef inline const int family(self):
@@ -108,8 +116,8 @@ static inline int SocketType_Check(PyObject* obj) {
                 return self.sock_type
             
             @property
-            cdef inline double timeout(self):
-                return PyTime_AsSecondsDouble(self.sock_type)
+            cdef inline PyTime_t timeout(self):
+                return self.sock_timeout
 
     int import_socket() except 0
     # imports _socket.CAPI this function is important to import first thing after cimport is finished

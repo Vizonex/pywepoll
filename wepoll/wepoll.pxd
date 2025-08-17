@@ -16,8 +16,8 @@ cdef extern from "wepoll.h" nogil:
         EPOLLWRBAND = 512
         EPOLLMSG = 1024
         EPOLLRDHUP = 8192
-        EPOLLONESHOT = -2147483648
-    
+        EPOLLONESHOT = 2147483648
+
     int EPOLL_CTL_ADD
     int EPOLL_CTL_MOD
     int EPOLL_CTL_DEL

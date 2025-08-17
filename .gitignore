@@ -1,0 +1,12 @@
+.venv
+__pycache__
+
+# Cython Debug artifacts
+wepoll/_wepoll.c
+wepoll/_wepoll.html
+
+# Windows artifacts
+*.pyd
+# Build directory
+build
+*.egg-info
