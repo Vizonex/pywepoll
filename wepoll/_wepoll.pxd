@@ -11,13 +11,16 @@ cdef class epoll:
     cdef int _create(self, int sizehint)
     cdef int _create1(self)
     cdef int _close(self)
-    cdef int _ctl(self, int op, SOCKET sock, epoll_event* event)
+    cdef int _ctl(self, int op, SOCKET sock, epoll_event* event) except -1
     cdef int _wait(self, epoll_event* events, int maxevents, int timeout)
     cdef int _init(self, int sizehint, HANDLE handle)
     cdef int _handle_ctl_result(self, int result) except -1
     cdef int _pools_closed(self) except -1
     cpdef object close(self)
     cpdef object register(self, object fd, unsigned int eventmask)
-    cpdef object modify(self, object fd, int eventmask)
+    cpdef object modify(self, object fd, unsigned int eventmask)
     cpdef object unregister(self, object fd)
     cpdef list poll(self, object timeout =*, int maxevents =*)
+    
+    cpdef uintptr_t fileno(self)
+    
