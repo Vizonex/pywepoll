@@ -18,3 +18,7 @@ requires = ["setuptools", "cython", "wheel"]
 [tool.setuptools]
 zip-safe = false
 packages = ['wepoll']
+
+[project.urls]
+    homepage = "https://github.com/Vizonex/pywepoll"
+    repository = "https://github.com/Vizonex/pywepoll.git"
