@@ -22,6 +22,8 @@ cdef extern from "Python.h":
 /* Fingers crossed that python puts this into it's public C-API at a higher level */
 
 // 3.13 is cursed...
+#if (PY_VERSION_HEX >= 0x030d00f0)
+   
 typedef enum {
     // Round towards minus infinity (-inf).
     // For example, used to read a clock.
@@ -47,6 +49,8 @@ typedef enum {
     // used for timeouts.
     _PyTime_ROUND_TIMEOUT = _PyTime_ROUND_UP
 } _PyTime_round_t;
+ 
+#endif
 
 typedef _PyTime_round_t PyTime_round_t;
 #define PyTime_FromSecondsObject _PyTime_FromSecondsObject
