@@ -1,9 +1,11 @@
 [project]
 name = "wepoll"
+description = "Cython adaptation of the wepoll C Library providing epoll selectors to windows"
 version = "0.1.0"
 authors = [
     { name = "Vizonex", email = "VizonexBusiness@gmail.com" }
 ]
+license = {text = "MIT License"}
 requires-python = ">=3.9"
 dependencies = []
 
@@ -16,4 +18,3 @@ requires = ["setuptools", "cython", "wheel"]
 [tool.setuptools]
 zip-safe = false
 packages = ['wepoll']
-
