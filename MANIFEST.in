@@ -1,0 +1,4 @@
+include wepoll/__init__.pxd
+include wepoll/_wepoll.pxd
+include wepoll/socket.pxd
+include wepoll/_wepoll.pyx
