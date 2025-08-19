@@ -16,7 +16,7 @@ from .flags import EPOLLWRNORM as EPOLLWRNORM
 
 
 __author__ = "Vizonex"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __all__ = (
     "__author__",
     "__version__",
@@ -34,3 +34,4 @@ __all__ = (
     "EpollSelector",
     "WepollEventLoop",
 )
+
