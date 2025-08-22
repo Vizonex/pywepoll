@@ -1,10 +1,10 @@
 import math
+import sys
 from selectors import _PollLikeSelector as PollLikeSelector
 from typing import TYPE_CHECKING, Optional
 
 from ._wepoll import epoll
 from .flags import EPOLLIN, EPOLLOUT
-import sys
 
 # Added here if you didn't want to grab from somewhere else
 EVENT_READ = 1  # (1 << 0)
@@ -31,6 +31,7 @@ class EpollSelector(PollLikeSelector):
             _fd_to_key: "dict[int, SelectorKey]"
 
     if sys.version_info < (3, 13):
+
         def select(self, timeout=None):
             # This is shared between poll() and epoll().
             # epoll() has a different signature and handling of timeout parameter.
@@ -59,6 +60,7 @@ class EpollSelector(PollLikeSelector):
                     ready.append((key, events & key.events))
             return ready
     else:
+
         def select(self, timeout=None):
             if timeout is None:
                 timeout = -1
@@ -66,7 +68,7 @@ class EpollSelector(PollLikeSelector):
                 timeout = 0
             else:
                 pass
-            
+
             # epoll_wait() expects `maxevents` to be greater than zero;
             # we want to make sure that `select()` can be called when no
             # FD is registered.
@@ -82,7 +84,8 @@ class EpollSelector(PollLikeSelector):
             for fd, event in fd_event_list:
                 key = fd_to_key.get(fd)
                 if key:
-                    events = ((event & _NOT_EPOLLIN and EVENT_WRITE)
-                              | (event & _NOT_EPOLLOUT and EVENT_READ))
+                    events = (event & _NOT_EPOLLIN and EVENT_WRITE) | (
+                        event & _NOT_EPOLLOUT and EVENT_READ
+                    )
                     ready.append((key, events & key.events))
             return ready

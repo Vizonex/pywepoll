@@ -1,21 +1,24 @@
 # cython: freethreading = True
 cimport cython
-from libc.limits cimport INT_MAX, INT_MIN
 from cpython.exc cimport (PyErr_CheckSignals, PyErr_SetFromErrno,
                           PyErr_SetFromWindowsErr, PyErr_SetObject)
+from cpython.long cimport PyLong_AsVoidPtr, PyLong_FromVoidPtr
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
+from libc.limits cimport INT_MAX, INT_MIN
 
-
-from .socket cimport SocketType_Check, import_socket, Socket_GetFileDescriptor
+from .socket cimport Socket_GetFileDescriptor, SocketType_Check, import_socket
 from .wepoll cimport *
+
+import os
 
 # Inspired by the original 2006 cython epoll twisted code and CPython's vesion
 
 import_socket()
 
-
+os.get_handle_inheritable()
 from cpython.time cimport PyTime_t as PyTime_t
 from cpython.time cimport monotonic_ns as monotonic_ns
+
 
 cdef extern from "Python.h":
     """
@@ -340,8 +343,11 @@ DEF FD_SETSIZE = 512
 
 
 cdef SOCKET fd_from_object(object obj) except -1:
+    cdef uintptr_t fd
     if SocketType_Check(obj):
-        return obj.fileno()
+        if Socket_GetFileDescriptor(obj, &fd) < 0:
+            return -1
+        return fd
     elif isinstance(obj, int):
         return obj
     else:
@@ -433,8 +439,7 @@ cdef class epoll:
         return 0
  
     # NOTE Flags are deprecated in select standard library so no point in using it here...
-    # Also __cinit__ can be used since subclassing is disabled so overriding __new__ is safe.
-    def __cinit__(self, int sizehint = -1):
+    def __init__(self, int sizehint = -1):
         if sizehint == -1:
             sizehint = FD_SETSIZE - 1
         
@@ -475,7 +480,7 @@ cdef class epoll:
 
         _fd = fd_from_object(fd)
         ev.events = eventmask
-        ev.data.fd = _fd
+        ev.data.sock = _fd
         if self._ctl(EPOLL_CTL_ADD, _fd, &ev) < 0:
             raise
             
@@ -618,4 +623,10 @@ cdef class epoll:
     
     def __dealloc__(self):
         self.close()
-
+    
+    @classmethod
+    def fromfd(cls, object fd):
+        cdef epoll poll = cls.__new__(cls)
+        if poll._init(FD_SETSIZE - 1, PyLong_AsVoidPtr(fd)) < 0:
+            raise
+        return poll
