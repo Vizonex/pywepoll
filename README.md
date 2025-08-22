@@ -2,7 +2,6 @@
 [![PyPI version](https://badge.fury.io/py/wepoll.svg)](https://badge.fury.io/py/wepoll)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/wepoll)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![License: Appache-2.0](https://img.shields.io/badge/License-Appache-yellow.svg)](https://opensource.org/licenses/Appache-2-0)
 
 A Python Port of the wepoll C Library meant to help give windows support for epoll objects in python. Code was based on CPython's implementation mixed with the old _epoll.pyx twisted source code. (If I can refind it I'll try to archive it for someone to look through.)
 
@@ -11,5 +10,6 @@ Originally this was C Library was going to be utilized in [winloop](https://gith
 
 Currently as is the library is experimental and I wouldn't call it beta or production ready yet unlike cyares which is in it's beta phase and does a really good job performance-wise. 
 The Code is based off the old twisted module 
+
 
 
