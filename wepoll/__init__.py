@@ -17,19 +17,19 @@ from .selector import EpollSelector
 __author__ = "Vizonex"
 __version__ = "0.1.1"
 __all__ = (
-    "__author__",
-    "__version__",
-    "EPOLLIN",
-    "EPOLLPRI",
-    "EPOLLOUT",
     "EPOLLERR",
     "EPOLLHUP",
-    "EPOLLWRNORM",
-    "EPOLLWRBAND",
+    "EPOLLIN",
     "EPOLLMSG",
-    "EPOLLRDHUP",
     "EPOLLONESHOT",
-    "epoll",
+    "EPOLLOUT",
+    "EPOLLPRI",
+    "EPOLLRDHUP",
+    "EPOLLWRBAND",
+    "EPOLLWRNORM",
     "EpollSelector",
     "WepollEventLoop",
+    "__author__",
+    "__version__",
+    "epoll",
 )
