@@ -1,6 +1,4 @@
 from ._wepoll import epoll
-from .loop import WepollEventLoop
-from .selector import EpollSelector
 from .flags import EPOLLERR as EPOLLERR
 from .flags import EPOLLHUP as EPOLLHUP
 from .flags import EPOLLIN as EPOLLIN
@@ -13,25 +11,25 @@ from .flags import EPOLLRDHUP as EPOLLRDHUP
 from .flags import EPOLLRDNORM as EPOLLRDNORM
 from .flags import EPOLLWRBAND as EPOLLWRBAND
 from .flags import EPOLLWRNORM as EPOLLWRNORM
-
+from .loop import WepollEventLoop
+from .selector import EpollSelector
 
 __author__ = "Vizonex"
 __version__ = "0.1.1"
 __all__ = (
-    "__author__",
-    "__version__",
-    "EPOLLIN",
-    "EPOLLPRI",
-    "EPOLLOUT",
     "EPOLLERR",
     "EPOLLHUP",
-    "EPOLLWRNORM",
-    "EPOLLWRBAND",
+    "EPOLLIN",
     "EPOLLMSG",
-    "EPOLLRDHUP",
     "EPOLLONESHOT",
-    "epoll",
+    "EPOLLOUT",
+    "EPOLLPRI",
+    "EPOLLRDHUP",
+    "EPOLLWRBAND",
+    "EPOLLWRNORM",
     "EpollSelector",
     "WepollEventLoop",
+    "__author__",
+    "__version__",
+    "epoll",
 )
-
