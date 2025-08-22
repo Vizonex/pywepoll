@@ -9,13 +9,12 @@ from libc.limits cimport INT_MAX, INT_MIN
 from .socket cimport Socket_GetFileDescriptor, SocketType_Check, import_socket
 from .wepoll cimport *
 
-import os
 
 # Inspired by the original 2006 cython epoll twisted code and CPython's vesion
 
 import_socket()
 
-os.get_handle_inheritable()
+
 from cpython.time cimport PyTime_t as PyTime_t
 from cpython.time cimport monotonic_ns as monotonic_ns
 
