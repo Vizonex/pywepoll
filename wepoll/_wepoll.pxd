@@ -1,4 +1,5 @@
 from .wepoll cimport *
+from .socket cimport PySocketModule_APIObject
 
 
 # NOTE: Many portions of code can be externally 
@@ -7,7 +8,10 @@ cdef class epoll:
     cdef:
         HANDLE handle
         readonly bint closed
+        # Attempts to make socketmodule threadsafe during use...
+        PySocketModule_APIObject* socket_api
 
+    cdef SOCKET _fd_from_object(self, object obj) except -1
     cdef int _create(self, int sizehint)
     cdef int _create1(self)
     cdef int _close(self)

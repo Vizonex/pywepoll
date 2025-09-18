@@ -1,5 +1,5 @@
 from cpython.object cimport PyObject, PyTypeObject
-from cpython.time cimport PyTime_AsSecondsDouble, PyTime_t
+from cpython.time cimport PyTime_t
 from libc.stdint cimport uintptr_t
 
 # After carefully observing socketmodule.h over from CPython and some 
@@ -53,12 +53,18 @@ typedef struct  {
 
 PySocketModule_APIObject* __cython_socket_api;
 
+/* Attempts to make pywepoll threadsafe */
+PySocketModule_APIObject* cimport_socket(){
+    return (PySocketModule_APIObject*)PyCapsule_Import(PySocket_CAPSULE_NAME, 0);
+}
+
 int import_socket(){
     /* PySocketModule_ImportModuleAndAPI Macro was not required 
      * we need the import to block incase of failure */ 
     __cython_socket_api = PyCapsule_Import(PySocket_CAPSULE_NAME, 0);
     return __cython_socket_api != NULL;
 }
+
 
 static inline int SocketType_CheckExact(PyObject* obj) {
     if (__cython_socket_api != NULL){
@@ -101,6 +107,8 @@ static inline int Socket_GetFileDescriptor(PyObject* sock, uintptr_t *fd){
     
     int Socket_GetFileDescriptor(object sock, uintptr_t *fd)
 
+    # Global
+    PySocketModule_APIObject* __cython_socket_api 
 
     ctypedef class _socket.socket [object PySocketSockObject, check_size ignore]:
         cdef:
@@ -133,3 +141,5 @@ static inline int Socket_GetFileDescriptor(PyObject* sock, uintptr_t *fd){
     # - 0 if False
     # - 1 if True 
     # - -1 if object is NULL
+
+    PySocketModule_APIObject* cimport_socket() except NULL

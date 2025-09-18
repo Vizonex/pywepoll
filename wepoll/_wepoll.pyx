@@ -5,14 +5,11 @@ from cpython.exc cimport (PyErr_CheckSignals, PyErr_SetFromErrno,
 from cpython.long cimport PyLong_AsVoidPtr, PyLong_FromVoidPtr
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
 from libc.limits cimport INT_MAX, INT_MIN
-
-from .socket cimport Socket_GetFileDescriptor, SocketType_Check, import_socket
+from cpython.object cimport PyTypeObject, PyObject_TypeCheck
+from .socket cimport cimport_socket, socket
 from .wepoll cimport *
 
-
 # Inspired by the original 2006 cython epoll twisted code and CPython's vesion
-
-import_socket()
 
 
 from cpython.time cimport PyTime_t as PyTime_t
@@ -341,17 +338,17 @@ cdef extern from "errno.h" nogil:
 DEF FD_SETSIZE = 512
 
 
-cdef SOCKET fd_from_object(object obj) except -1:
-    cdef uintptr_t fd
-    if SocketType_Check(obj):
-        if Socket_GetFileDescriptor(obj, &fd) < 0:
-            return -1
-        return fd
-    elif isinstance(obj, int):
-        return obj
-    else:
-        PyErr_SetObject(TypeError, f"{obj!r} not supported")
-        return -1
+# cdef SOCKET fd_from_object(object obj) except -1:
+#     cdef uintptr_t fd
+#     if SocketType_Check(obj):
+#         if Socket_GetFileDescriptor(obj, &fd) < 0:
+#             return -1
+#         return fd
+#     elif isinstance(obj, int):
+#         return obj
+#     else:
+#         PyErr_SetObject(TypeError, f"{obj!r} not supported")
+#         return -1
         
  
 # Keep final the same way select does on linux
@@ -360,6 +357,16 @@ cdef class epoll:
     # internal methods first then try mimicing python
     # doing so this way allows us to create a 
     # cpython capsule if we wish...
+
+    cdef SOCKET _fd_from_object(self, object obj) except -1:
+        # Made threasafe in 0.1.3 by only making init need to cimport the capsule.
+        if PyObject_TypeCheck(obj, self.socket_api.Sock_Type):
+            return (<socket>obj).sock_fd
+        elif isinstance(obj, int):
+            return <SOCKET>obj
+        else:
+            PyErr_SetObject(TypeError, f"{obj!r} not supported")
+            return -1
     
     # would've used nogil but it did not feel as clean as PyEval was
     cdef int _create(self, int sizehint):
@@ -445,6 +452,12 @@ cdef class epoll:
         elif sizehint <= 0:
             raise ValueError("negative sizehint")
         
+        # NOTE: Throw me an issue if a memory leak is noticable.
+        # I will then be able to diagnose if this was the reason.
+        self.socket_api = cimport_socket()
+        if self.socket_api == NULL:
+            raise
+
         if self._init(sizehint, NULL) < 0:
             raise
 
@@ -477,7 +490,7 @@ cdef class epoll:
         if self._pools_closed() < 0:
             raise
 
-        _fd = fd_from_object(fd)
+        _fd = self._fd_from_object(fd)
         ev.events = eventmask
         ev.data.sock = _fd
         if self._ctl(EPOLL_CTL_ADD, _fd, &ev) < 0:
@@ -504,7 +517,7 @@ cdef class epoll:
 
         if self._pools_closed() < 0:
             raise
-        _fd = fd_from_object(fd)
+        _fd = self._fd_from_object(fd)
         ev.events = eventmask
         ev.data.sock = _fd
         if self._ctl(EPOLL_CTL_MOD, _fd, &ev) < 0:
@@ -531,7 +544,7 @@ cdef class epoll:
         if self._pools_closed() < 0:
             raise
         
-        _fd = fd_from_object(fd)
+        _fd = self._fd_from_object(fd)
         if self._ctl(EPOLL_CTL_DEL, _fd, &ev) < 0:
             raise
 
@@ -609,7 +622,7 @@ cdef class epoll:
                     nfds = 0
                     break
                 ms = _PyTime_AsMilliseconds(timeout, _PyTime_ROUND_CEILING)
-         
+
         elist = [(evs[i].data.fd, evs[i].events) for i in range(nfds)]
         PyMem_Free(evs)
         return elist
