@@ -1,4 +1,4 @@
-anyio==4.10.0
+anyio==4.11.0
 colorama==0.4.6
 cyares==0.1.6
 cython==3.1.4
