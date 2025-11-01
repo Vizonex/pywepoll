@@ -9,6 +9,9 @@ from cpython.object cimport PyTypeObject, PyObject_TypeCheck
 from .socket cimport cimport_socket, socket
 from .wepoll cimport *
 
+# TODO: use CPython equivilent in a future update...
+from msvcrt import get_osfhandle
+
 # Inspired by the original 2006 cython epoll twisted code and CPython's vesion
 
 
@@ -638,7 +641,10 @@ cdef class epoll:
     
     @classmethod
     def fromfd(cls, object fd):
+        """creates a epoll (wepoll) from msvcrt using get_osfhandle(fd) this may be upgraded in the future
+        to use an optimized version or a 1:1 derrived copy of the CPython code for more speed."""
         cdef epoll poll = cls.__new__(cls)
-        if poll._init(FD_SETSIZE - 1, PyLong_AsVoidPtr(fd)) < 0:
+        if poll._init(FD_SETSIZE - 1, PyLong_AsVoidPtr(get_osfhandle(fd))) < 0:
             raise
         return poll
+    

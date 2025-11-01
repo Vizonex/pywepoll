@@ -31,5 +31,8 @@ class epoll:
     ) -> list[tuple[int, int]]: ...
 
     # Maybe in a Future release but we shall see...
-    # @classmethod
-    # def fromfd(cls, fd: int, /) -> epoll: ...
+    @classmethod
+    def fromfd(cls, fd: int, /) -> epoll:
+        """creates a epoll (wepoll) from msvcrt using get_osfhandle(fd) this may be upgraded in the future
+        to use an optimized version or a 1:1 derrived copy of the CPython code for more speed."""
+        
