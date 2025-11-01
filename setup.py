@@ -6,7 +6,7 @@ if sys.version_info[:2] < (3, 10):
     from warnings import warn
     warn(
         "3.9 will be dropped in"
-        "version 0.1.4 consider upgrading",
+        "version 0.1.5 consider upgrading",
         DeprecationWarning
     )
 
@@ -24,3 +24,4 @@ setup(
         ]
     )
 )
+
