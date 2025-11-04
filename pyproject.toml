@@ -1,13 +1,13 @@
 [project]
 name = "wepoll"
 description = "Cython adaptation of the wepoll C Library providing epoll selectors to windows"
-version = "0.1.4"
+version = "0.1.5"
 authors = [
     { name = "Vizonex", email = "VizonexBusiness@gmail.com" }
 ]
 readme = "README.md"
 license = {text = "MIT License"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = []
 
 [tool.cibuildwheel]
