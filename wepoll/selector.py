@@ -1,7 +1,6 @@
-import math
 import sys
 from selectors import _PollLikeSelector as PollLikeSelector
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ._wepoll import epoll
 from .flags import EPOLLIN, EPOLLOUT

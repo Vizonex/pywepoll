@@ -1,22 +1,28 @@
 # cython: freethreading = True
 cimport cython
-from cpython.exc cimport (PyErr_CheckSignals, PyErr_SetFromErrno,
-                          PyErr_SetFromWindowsErr, PyErr_SetObject)
-from cpython.long cimport PyLong_AsVoidPtr, PyLong_FromVoidPtr
+from cpython.exc cimport (
+    PyErr_CheckSignals, 
+    PyErr_SetFromErrno,
+    PyErr_SetFromWindowsErr, 
+    PyErr_SetObject
+)
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
+from cpython.object cimport PyObject_TypeCheck
 from libc.limits cimport INT_MAX, INT_MIN
-from cpython.object cimport PyTypeObject, PyObject_TypeCheck
+
+from cpython.time cimport PyTime_t as PyTime_t
+from cpython.time cimport monotonic_ns as monotonic_ns
+
+from .msvcrt cimport get_osfhandle
 from .socket cimport cimport_socket, socket
 from .wepoll cimport *
-
-# TODO: use CPython equivilent in a future update...
-from msvcrt import get_osfhandle
 
 # Inspired by the original 2006 cython epoll twisted code and CPython's vesion
 
 
-from cpython.time cimport PyTime_t as PyTime_t
-from cpython.time cimport monotonic_ns as monotonic_ns
+# TODO: make C-API Capsule in a later update and then migrate to CPython 
+# so that the cython functionality can at least be retained.
+
 
 
 cdef extern from "Python.h":
@@ -341,18 +347,6 @@ cdef extern from "errno.h" nogil:
 DEF FD_SETSIZE = 512
 
 
-# cdef SOCKET fd_from_object(object obj) except -1:
-#     cdef uintptr_t fd
-#     if SocketType_Check(obj):
-#         if Socket_GetFileDescriptor(obj, &fd) < 0:
-#             return -1
-#         return fd
-#     elif isinstance(obj, int):
-#         return obj
-#     else:
-#         PyErr_SetObject(TypeError, f"{obj!r} not supported")
-#         return -1
-        
  
 # Keep final the same way select does on linux
 @cython.final
@@ -640,11 +634,16 @@ cdef class epoll:
         self.close()
     
     @classmethod
-    def fromfd(cls, object fd):
-        """creates a epoll (wepoll) from msvcrt using get_osfhandle(fd) this may be upgraded in the future
-        to use an optimized version or a 1:1 derrived copy of the CPython code for more speed."""
+    def fromfd(cls, int fd):
+        """creates a epoll (wepoll) from msvcrt using _get_osfhandle(fd) 
+        from `io.h` in C to get the file descriptor's handle"""
         cdef epoll poll = cls.__new__(cls)
-        if poll._init(FD_SETSIZE - 1, PyLong_AsVoidPtr(get_osfhandle(fd))) < 0:
+        cdef void* handle = NULL
+
+        if get_osfhandle(&handle, fd) < 0:
+            # Reraise the OS Error we had setup previously...
+            raise 
+
+        if poll._init(FD_SETSIZE - 1, handle) < 0:
             raise
-        return poll
-    
+        return poll    

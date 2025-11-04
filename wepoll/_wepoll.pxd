@@ -1,5 +1,5 @@
-from .wepoll cimport *
 from .socket cimport PySocketModule_APIObject
+from .wepoll cimport *
 
 
 # NOTE: Many portions of code can be externally 
