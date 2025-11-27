@@ -2,20 +2,18 @@ from wepoll import epoll, EPOLLIN, EPOLLOUT
 from socket import AF_INET
 import pytest
 
+
+cyares = pytest.importorskip("cyares")
+if cyares is not None:
+    from cyares import Channel
+    from cyares.channel import CYARES_SOCKET_BAD
+# based off pycares's testsuite
+
 READ = EPOLLIN
 WRITE = EPOLLOUT
 
-cyares = pytest.importorskip("cyares")
-
-
-from cyares import Channel
-from cyares.channel import CYARES_SOCKET_BAD
-
-# based off pycares's testsuite
-
-
 class TestCyaresWepoll:
-    channel: Channel
+    channel: "Channel"
 
     def wait(self):
         # The function were really testing is this wait function
