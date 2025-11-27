@@ -1,15 +1,22 @@
-from cyares import Channel
-from cyares.channel import CYARES_SOCKET_BAD
-from wepoll import EpollSelector
 from wepoll import epoll, EPOLLIN, EPOLLOUT
 from socket import AF_INET
+import pytest
+
 READ = EPOLLIN
 WRITE = EPOLLOUT
 
+cyares = pytest.importorskip("cyares")
+
+
+from cyares import Channel
+from cyares.channel import CYARES_SOCKET_BAD
+
 # based off pycares's testsuite
+
 
 class TestCyaresWepoll:
     channel: Channel
+
     def wait(self):
         # The function were really testing is this wait function
         poll = epoll()
@@ -24,9 +31,7 @@ class TestCyaresWepoll:
 
             timeout = self.channel.timeout()
             if timeout == 0.0:
-                self.channel.process_fd(
-                    CYARES_SOCKET_BAD, CYARES_SOCKET_BAD
-                )
+                self.channel.process_fd(CYARES_SOCKET_BAD, CYARES_SOCKET_BAD)
                 continue
             for fd, event in poll.poll(timeout):
                 if event & ~EPOLLIN:
@@ -40,5 +45,3 @@ class TestCyaresWepoll:
         self.wait()
         self.channel.cancel()
         assert fut.result()
-
-

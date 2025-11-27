@@ -30,7 +30,7 @@ class epoll:
     ) -> list[tuple[int, int]]:
         """
         Wait for events. timeout in seconds (float)
-        
+
         Parameters
         ----------
 
@@ -45,6 +45,5 @@ class epoll:
     # Maybe in a Future release but we shall see...
     @classmethod
     def fromfd(cls, fd: int, /) -> epoll:
-        """creates a epoll (wepoll) from msvcrt using _get_osfhandle(fd) 
+        """creates a epoll (wepoll) from msvcrt using _get_osfhandle(fd)
         from `io.h` in C to get the file descriptor's handle"""
-    

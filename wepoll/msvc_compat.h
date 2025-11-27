@@ -4,6 +4,10 @@
 /* Made under the terms of the MIT License but feel free to copy and 
 paste if you need to borrow this code elsewhere... - Vizonex */
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #include <io.h> /* _get_osfhandle */
 #include "Python.h"
 
@@ -27,4 +31,8 @@ int get_osfhandle(void** ret_handle, int fd){
     return 0;
 }
 
+
+#ifdef __cplusplus
+}
+#endif 
 #endif // __MSVC_COMPAT_H__

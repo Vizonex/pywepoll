@@ -15,7 +15,7 @@ cdef class epoll:
     cdef int _create(self, int sizehint)
     cdef int _create1(self)
     cdef int _close(self)
-    cdef int _ctl(self, int op, SOCKET sock, epoll_event* event) except -1
+    cdef int _ctl(self, int op, SOCKET sock, epoll_event* event)
     cdef int _wait(self, epoll_event* events, int maxevents, int timeout)
     cdef int _init(self, int sizehint, HANDLE handle)
     cdef int _handle_ctl_result(self, int result) except -1
