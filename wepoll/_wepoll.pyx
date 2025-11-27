@@ -23,6 +23,16 @@ from .wepoll cimport *
 # TODO: make C-API Capsule in a later update and then migrate to CPython 
 # so that the cython functionality can at least be retained.
 
+cdef extern from "Python.h":
+    """
+/* Shortcut for accessing __new__ but at a much lower level than __new__*/
+PyObject* wepoll_tp_alloc(PyObject* tp){
+    PyTypeObject* ty = Py_TYPE(tp);
+    return ty->tp_alloc(ty, 0);
+}
+    """
+    epoll wepoll_tp_alloc(object)
+
 
 
 cdef extern from "Python.h":
@@ -367,13 +377,13 @@ cdef class epoll:
     
     # would've used nogil but it did not feel as clean as PyEval was
     cdef int _create(self, int sizehint):
-        # cdef PyThreadState* save = PyEval_SaveThread()
         cdef void* handle
         with nogil:
             handle = epoll_create(sizehint)
         self.handle = handle
         return -1 if self.handle == NULL else 0
 
+    # TODO: Deprecate create1 in future update.
     cdef int _create1(self):
         cdef void* handle
         with nogil:
@@ -393,7 +403,7 @@ cdef class epoll:
     # TODO: In the future I will provide a way to make it so that 
     # other types of data besides just sockets can get polled.
 
-    cdef int _ctl(self, int op, SOCKET sock, epoll_event* event) except -1:
+    cdef int _ctl(self, int op, SOCKET sock, epoll_event* event):
         cdef void* handle = self.handle
         cdef int ret
         with nogil:
@@ -637,7 +647,8 @@ cdef class epoll:
     def fromfd(cls, int fd):
         """creates a epoll (wepoll) from msvcrt using _get_osfhandle(fd) 
         from `io.h` in C to get the file descriptor's handle"""
-        cdef epoll poll = cls.__new__(cls)
+        # TODO: Try coming up with a hack for accessing tp_alloc(0) instead of tp_new
+        cdef epoll poll = wepoll_tp_alloc(cls)
         cdef void* handle = NULL
 
         if get_osfhandle(&handle, fd) < 0:

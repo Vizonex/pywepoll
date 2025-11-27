@@ -1,20 +1,26 @@
 [project]
 name = "wepoll"
 description = "Cython adaptation of the wepoll C Library providing epoll selectors to windows"
-version = "0.1.5"
+dynamic = ["version"]
 authors = [
     { name = "Vizonex", email = "VizonexBusiness@gmail.com" }
 ]
 readme = "README.md"
-license = {text = "MIT License"}
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = []
 
 [tool.cibuildwheel]
 build-frontend = "build"
 
+[tool.setuptools.dynamic]
+version = {attr = "wepoll.__version__"}
+
+
 [build-system]
 requires = ["setuptools", "cython", "wheel"]
+build-backend = "setuptools.build_meta"
+
 
 [tool.setuptools]
 zip-safe = false

@@ -1,21 +1,23 @@
 import sys
-from selectors import _PollLikeSelector as PollLikeSelector
+from selectors import _PollLikeSelector as PollLikeSelector, SelectorKey
 from typing import TYPE_CHECKING
 
 from ._wepoll import epoll
 from .flags import EPOLLIN, EPOLLOUT
 
+
 # Added here if you didn't want to grab from somewhere else
 EVENT_READ = 1  # (1 << 0)
 EVENT_WRITE = 2  # (1 << 1)
 
-if TYPE_CHECKING:
-    from selectors import SelectorKey
+
 
 # 3.13 compatabaility flags
 _NOT_EPOLLIN = ~EPOLLIN
 _NOT_EPOLLOUT = ~EPOLLOUT
 
+# TODO: We might be able to get away with moving this into cython in a later update 
+# I'll do it when I'm motivated...
 
 class EpollSelector(PollLikeSelector):
     """Wepoll-based selector for windows operating systems"""
@@ -31,7 +33,7 @@ class EpollSelector(PollLikeSelector):
 
     if sys.version_info < (3, 13):
 
-        def select(self, timeout=None):
+        def select(self, timeout: float | None = None) -> list[tuple[int, SelectorKey]]:
             # This is shared between poll() and epoll().
             # epoll() has a different signature and handling of timeout parameter.
             if timeout is None:
@@ -42,25 +44,25 @@ class EpollSelector(PollLikeSelector):
                 # NOTE: Our Poll does it by seconds so we get to ignore that
                 pass
 
-            ready = []
+            ready: list[tuple[SelectorKey, int]] = []
             try:
                 fd_event_list = self._selector.poll(timeout)
             except InterruptedError:
                 return ready
+            
+            fd_to_key = self._fd_to_key
             for fd, event in fd_event_list:
-                events = 0
-                if event & ~self._EVENT_READ:
-                    events |= EVENT_WRITE
-                if event & ~self._EVENT_WRITE:
-                    events |= EVENT_READ
-
-                key = self._key_from_fd(fd)
-                if key:
+                # We can do better than what is in python's standard selectors library...    
+                if key := fd_to_key.get(fd):
+                    events = 0
+                    if event & ~self._EVENT_READ:
+                        events |= EVENT_WRITE
+                    if event & ~self._EVENT_WRITE:
+                        events |= EVENT_READ
                     ready.append((key, events & key.events))
             return ready
     else:
-
-        def select(self, timeout=None):
+        def select(self, timeout: float | None = None) -> list[tuple[int, SelectorKey]]:
             if timeout is None:
                 timeout = -1
             elif timeout <= 0:
@@ -73,7 +75,7 @@ class EpollSelector(PollLikeSelector):
             # FD is registered.
             max_ev = len(self._fd_to_key) or 1
 
-            ready = []
+            ready: list[tuple[SelectorKey, int]] = []
             try:
                 fd_event_list = self._selector.poll(timeout, max_ev)
             except InterruptedError:
