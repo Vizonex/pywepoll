@@ -10,6 +10,7 @@ jobs:
   dependabot:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
+    timeout-minutes: 2
     steps:
       - name: Dependabot metadata
         id: metadata
