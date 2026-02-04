@@ -27,3 +27,16 @@ EPOLLRDHUP = 1 << 13
 """Stream socket peer closed connection or shut down writing half of connection."""
 EPOLLONESHOT = 1 << 31
 """Set one-shot behavior. After one event is pulled out, the fd is internally disabled"""
+
+__all__ = (
+    "EPOLLERR",
+    "EPOLLHUP",
+    "EPOLLIN",
+    "EPOLLMSG",
+    "EPOLLONESHOT",
+    "EPOLLOUT",
+    "EPOLLPRI",
+    "EPOLLRDHUP",
+    "EPOLLWRBAND",
+    "EPOLLWRNORM",
+)

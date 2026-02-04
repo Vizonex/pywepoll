@@ -2,6 +2,7 @@ from asyncio.selector_events import BaseSelectorEventLoop
 
 from .selector import EpollSelector
 
+__all__ = ("WepollEventLoop",)
 
 class WepollEventLoop(BaseSelectorEventLoop):
     """
