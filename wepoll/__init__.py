@@ -15,7 +15,7 @@ from .loop import WepollEventLoop
 from .selector import EpollSelector
 
 __author__ = "Vizonex"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = (
     "EPOLLERR",
     "EPOLLHUP",

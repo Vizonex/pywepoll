@@ -12,8 +12,8 @@ cdef class epoll:
         PySocketModule_APIObject* socket_api
 
     cdef SOCKET _fd_from_object(self, object obj) except -1
-    cdef int _create(self, int sizehint)
-    cdef int _create1(self)
+    cdef int _create(self, int sizehint) except -1
+    cdef int _create1(self) except -1
     cdef int _close(self)
     cdef int _ctl(self, int op, SOCKET sock, epoll_event* event)
     cdef int _wait(self, epoll_event* events, int maxevents, int timeout)

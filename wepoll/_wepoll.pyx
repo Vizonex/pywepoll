@@ -6,12 +6,12 @@ from cpython.exc cimport (
     PyErr_SetFromWindowsErr, 
     PyErr_SetObject
 )
+from cpython.long cimport PyLong_Check
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
 from cpython.object cimport PyObject_TypeCheck
+from cpython.time cimport PyTime_t, monotonic_ns
+from cpython.type cimport PyType_GenericAlloc
 from libc.limits cimport INT_MAX, INT_MIN
-
-from cpython.time cimport PyTime_t as PyTime_t
-from cpython.time cimport monotonic_ns as monotonic_ns
 
 from .msvcrt cimport get_osfhandle
 from .socket cimport cimport_socket, socket
@@ -23,15 +23,7 @@ from .wepoll cimport *
 # TODO: make C-API Capsule in a later update and then migrate to CPython 
 # so that the cython functionality can at least be retained.
 
-cdef extern from "Python.h":
-    """
-/* Shortcut for accessing __new__ but at a much lower level than __new__*/
-PyObject* wepoll_tp_alloc(PyObject* tp){
-    PyTypeObject* ty = Py_TYPE(tp);
-    return ty->tp_alloc(ty, 0);
-}
-    """
-    epoll wepoll_tp_alloc(object)
+
 
 
 
@@ -339,12 +331,6 @@ cdef extern from "handleapi.h" nogil:
     )
     DWORD HANDLE_FLAG_INHERIT
 
-# cdef extern from "Python.h":
-#     ctypedef struct PyThreadState:
-#         pass
-#     cdef PyThreadState *PyEval_SaveThread()
-#     cdef void PyEval_RestoreThread(PyThreadState*)
-
 cdef extern from "errno.h" nogil:
     """
 #define wepoll_set_errno(err) errno = err
@@ -369,33 +355,28 @@ cdef class epoll:
         # Made threasafe in 0.1.3 by only making init need to cimport the capsule.
         if PyObject_TypeCheck(obj, self.socket_api.Sock_Type):
             return (<socket>obj).sock_fd
-        elif isinstance(obj, int):
+        elif PyLong_Check(obj):
             return <SOCKET>obj
-        else:
-            PyErr_SetObject(TypeError, f"{obj!r} not supported")
-            return -1
+        
+        PyErr_SetObject(TypeError, f"{obj!r} not supported")
+        return -1
     
     # would've used nogil but it did not feel as clean as PyEval was
-    cdef int _create(self, int sizehint):
-        cdef void* handle
+    cdef int _create(self, int sizehint) except -1:
         with nogil:
-            handle = epoll_create(sizehint)
-        self.handle = handle
+            self.handle = epoll_create(sizehint)
         return -1 if self.handle == NULL else 0
 
     # TODO: Deprecate create1 in future update.
-    cdef int _create1(self):
-        cdef void* handle
+    cdef int _create1(self) except -1: 
         with nogil:
-            handle = epoll_create1(0)
-        self.handle = handle
+            self.handle = epoll_create1(0)
         return -1 if self.handle == NULL else 0
-        
+ 
     cdef int _close(self):
-        cdef void* handle = self.handle
         cdef int ret
         with nogil:
-            ret = epoll_close(handle)
+            ret = epoll_close(self.handle)
             if ret < 0:
                 wepoll_set_errno(ret)
         return ret
@@ -404,10 +385,9 @@ cdef class epoll:
     # other types of data besides just sockets can get polled.
 
     cdef int _ctl(self, int op, SOCKET sock, epoll_event* event):
-        cdef void* handle = self.handle
         cdef int ret
         with nogil:
-            ret = epoll_ctl(handle, op, sock, event)
+            ret = epoll_ctl(self.handle, op, sock, event)
 
         if ret < 0:
             PyErr_SetFromErrno(OSError)
@@ -415,11 +395,8 @@ cdef class epoll:
         return ret
 
     cdef int _wait(self, epoll_event* events, int maxevents, int timeout):
-        cdef void* handle = self.handle
-        cdef int ret
         with nogil:
-            ret = epoll_wait(self.handle, events, maxevents, timeout)
-        return ret 
+            return epoll_wait(self.handle, events, maxevents, timeout)
     
     cdef int _init(self, int sizehint, HANDLE handle):
         if handle == NULL:
@@ -497,9 +474,8 @@ cdef class epoll:
         if self._pools_closed() < 0:
             raise
 
-        _fd = self._fd_from_object(fd)
+        _fd = ev.data.sock = self._fd_from_object(fd)
         ev.events = eventmask
-        ev.data.sock = _fd
         if self._ctl(EPOLL_CTL_ADD, _fd, &ev) < 0:
             raise
             
@@ -524,9 +500,8 @@ cdef class epoll:
 
         if self._pools_closed() < 0:
             raise
-        _fd = self._fd_from_object(fd)
+        _fd = ev.data.sock = self._fd_from_object(fd)
         ev.events = eventmask
-        ev.data.sock = _fd
         if self._ctl(EPOLL_CTL_MOD, _fd, &ev) < 0:
             raise
 
@@ -545,14 +520,10 @@ cdef class epoll:
 
         """
         cdef epoll_event ev
-        cdef SOCKET _fd
-        cdef int result
-
         if self._pools_closed() < 0:
             raise
-        
-        _fd = self._fd_from_object(fd)
-        if self._ctl(EPOLL_CTL_DEL, _fd, &ev) < 0:
+
+        if self._ctl(EPOLL_CTL_DEL, <SOCKET>self._fd_from_object(fd), &ev) < 0:
             raise
 
     cpdef list poll(self, object timeout = None, int maxevents = -1):
@@ -574,7 +545,6 @@ cdef class epoll:
         cdef PyTime_t _timeout, deadline, ms
         cdef epoll_event *evs = NULL
         cdef int nfds, i
-        cdef list elist
         cdef void* handle = self.handle
 
         _timeout = deadline = -1
@@ -604,36 +574,34 @@ cdef class epoll:
         evs = <epoll_event*>PyMem_Malloc(sizeof(epoll_event) * maxevents)
         if evs == NULL:
             raise MemoryError
-        
-        while True:
-            with nogil:
-                errno = 0
-                nfds = epoll_wait(handle, evs, maxevents, <int>ms)
-    
-            if nfds > 0:
-                break
+        try:
+            while True:
+                with nogil:
+                    errno = 0
+                    nfds = epoll_wait(handle, evs, maxevents, <int>ms)
 
-            if nfds < 0:
-                PyMem_Free(evs)
-                PyErr_SetFromErrno(OSError)
-                raise
-
-            # check for ctrl+C from end user wanting to stop program
-            if PyErr_CheckSignals() < 0:
-                PyMem_Free(evs)
-                raise
-
-            if timeout >= 0:
-                timeout = deadline - monotonic_ns()
-                if (timeout < 0):
-                    nfds = 0
+                if nfds > 0:
                     break
-                ms = _PyTime_AsMilliseconds(timeout, _PyTime_ROUND_CEILING)
 
-        elist = [(evs[i].data.fd, evs[i].events) for i in range(nfds)]
-        PyMem_Free(evs)
-        return elist
+                elif nfds < 0:
+                    PyErr_SetFromErrno(OSError)
+                    raise
 
+                # check for ctrl+C from end user wanting to stop program
+                if PyErr_CheckSignals() < 0:
+                    raise
+
+                if timeout >= 0:
+                    timeout = deadline - monotonic_ns()
+                    if (timeout < 0):
+                        nfds = 0
+                        break
+                    ms = _PyTime_AsMilliseconds(timeout, _PyTime_ROUND_CEILING)
+
+            return [(evs[i].data.fd, evs[i].events) for i in range(nfds)]
+        finally:
+            PyMem_Free(evs)
+        
     def __enter__(self):
         return self
     
@@ -647,9 +615,8 @@ cdef class epoll:
     def fromfd(cls, int fd):
         """creates a epoll (wepoll) from msvcrt using _get_osfhandle(fd) 
         from `io.h` in C to get the file descriptor's handle"""
-        # TODO: Try coming up with a hack for accessing tp_alloc(0) instead of tp_new
-        cdef epoll poll = wepoll_tp_alloc(cls)
-        cdef void* handle = NULL
+        cdef epoll poll = PyType_GenericAlloc(cls, 0)
+        cdef void* handle
 
         if get_osfhandle(&handle, fd) < 0:
             # Reraise the OS Error we had setup previously...
