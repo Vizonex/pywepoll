@@ -1,4 +1,4 @@
-# cython: freethreading = True
+# cython: freethreading_compatible = True
 cimport cython
 from cpython.exc cimport (
     PyErr_CheckSignals, 
