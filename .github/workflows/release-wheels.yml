@@ -19,22 +19,24 @@ jobs:
   build_sdist:
     uses: ./.github/workflows/run-sdist.yml
 
-  upload_to_github_release_page:
-    needs: [build_wheels, build_sdist]
-    if: github.event_name == 'release' && github.event.action == 'published'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v7
-        with:
-          path: dist
-          merge-multiple: true
-      - run: ls -lR dist
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: *.whl
+  # TODO: Soon as I can figure out how aio-libs handles wheel releases in the release folder I will try doing this again.
+  # for now automatically accepting PRS from dependabot will suffice.
+  # upload_to_github_release_page:
+  #   needs: [build_wheels, build_sdist]
+  #   if: github.event_name == 'release' && github.event.action == 'published'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/download-artifact@v7
+  #       with:
+  #         path: dist
+  #         merge-multiple: true
+  #     - run: ls -lR dist
+  #     - name: Release
+  #       uses: softprops/action-gh-release@v2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         files: *.whl
           
         
   upload_pypi:
