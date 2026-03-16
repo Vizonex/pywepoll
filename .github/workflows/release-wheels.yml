@@ -7,8 +7,8 @@ on:
     types:
       - published
 
-permissions:
-  contents: write
+permissions:                            
+  id-token: write  
 
 jobs:
   build_wheels:
