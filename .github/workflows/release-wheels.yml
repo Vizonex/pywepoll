@@ -49,12 +49,14 @@ jobs:
           path: dist
           merge-multiple: true
       - run: ls -lR dist
-      - name: Upload to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          # TODO: Move to trusted Publishing after winloop 0.1.91
-          password: ${{ secrets.PYPI_PASSWORD }}
+      
+      # Disabled for right now while I work on distributing artifacts
+      # - name: Upload to PyPI
+      #   uses: pypa/gh-action-pypi-publish@release/v1
+      #   with:
+      #     user: __token__
+      #     # TODO: Move to trusted Publishing after winloop 0.1.91
+      #     password: ${{ secrets.PYPI_PASSWORD }}
       
       - name: Sign the dists with Sigstore
         uses: sigstore/gh-action-sigstore-python@v3.1.0
