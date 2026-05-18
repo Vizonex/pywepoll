@@ -11,11 +11,11 @@ from .flags import EPOLLRDHUP as EPOLLRDHUP
 from .flags import EPOLLRDNORM as EPOLLRDNORM
 from .flags import EPOLLWRBAND as EPOLLWRBAND
 from .flags import EPOLLWRNORM as EPOLLWRNORM
-from .loop import WepollEventLoop
+from .loop import WepollEventLoop, new_event_loop
 from .selector import EpollSelector
 
 __author__ = "Vizonex"
-__version__ = "0.3.5"
+__version__ = "0.4.0"
 __all__ = (
     "EPOLLERR",
     "EPOLLHUP",
@@ -32,8 +32,5 @@ __all__ = (
     "__author__",
     "__version__",
     "epoll",
+    "new_event_loop",
 )
-
-
-
-

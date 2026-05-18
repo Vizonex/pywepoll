@@ -1,12 +1,14 @@
-from wepoll import WepollEventLoop
-from cyares.aio import DNSResolver
 import pytest
+from cyares.aio import DNSResolver
+
+from wepoll import new_event_loop
+
 
 @pytest.fixture(
     params=[
         pytest.param(
-            ("asyncio", {"loop_factory": WepollEventLoop}),
-            id="asyncio[WepollEventLoop]",
+            ("asyncio", {"loop_factory": new_event_loop}),
+            id="asyncio[wepoll]",
         )
     ]
 )

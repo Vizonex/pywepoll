@@ -1,5 +1,6 @@
-from wepoll import epoll, EPOLLIN, EPOLLOUT
 import pytest
+
+from wepoll import EPOLLIN, EPOLLOUT, epoll
 
 cyares = pytest.importorskip("cyares")
 if cyares is not None:
@@ -9,6 +10,7 @@ if cyares is not None:
 
 READ = EPOLLIN
 WRITE = EPOLLOUT
+
 
 class TestCyaresWepoll:
     channel: "Channel"
@@ -27,13 +29,13 @@ class TestCyaresWepoll:
                 if event & ~EPOLLOUT:
                     self.channel.process_read_fd(fd)
 
-    def socket_state_cb(self, fd: int, r:bool, w: bool):
+    def socket_state_cb(self, fd: int, r: bool, w: bool):
         flags = 0
         if r:
             flags |= READ
         if w:
             flags |= WRITE
-        
+
         if flags:
             self.poll.register(fd, flags)
         else:
@@ -41,7 +43,11 @@ class TestCyaresWepoll:
 
     def test_resolve(self):
         self.poll = epoll()
-        self.channel = Channel(event_thread=False, servers=["8.8.8.8", "8.8.4.4"], sock_state_cb=self.socket_state_cb)
+        self.channel = Channel(
+            event_thread=False,
+            servers=["8.8.8.8", "8.8.4.4"],
+            sock_state_cb=self.socket_state_cb,
+        )
         fut = self.channel.query("python.org", "A")
         self.wait()
         assert fut.result()

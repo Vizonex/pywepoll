@@ -17,6 +17,7 @@ EVENT_WRITE = 2  # (1 << 1)
 _NOT_EPOLLIN = ~EPOLLIN
 _NOT_EPOLLOUT = ~EPOLLOUT
 
+
 class EpollSelector(PollLikeSelector):
     """Wepoll-based selector for windows operating systems"""
 
@@ -40,7 +41,7 @@ class EpollSelector(PollLikeSelector):
             # epoll() has a different signature and handling of timeout parameter.
             if timeout and (timeout <= 0):
                 timeout = 0
-            
+
             ready: list[tuple[SelectorKey, int]] = []
             try:
                 fd_event_list = self._selector.poll(timeout)
@@ -59,6 +60,7 @@ class EpollSelector(PollLikeSelector):
                     ready.append((key, events & key.events))
             return ready
     else:
+
         def select(self, timeout: float | None = None) -> list[tuple[int, SelectorKey]]:
             if timeout is None:
                 timeout = -1
