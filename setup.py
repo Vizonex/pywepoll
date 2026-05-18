@@ -1,7 +1,8 @@
 from Cython.Build import cythonize
 from setuptools import Extension, setup
 
-# TODO: Move to pyproject.toml setup like in pyduktape3 somewhere around 0.3.0
+# TODO: add linux support for compatability with other Epoll libraries
+# as an extra bonus feature.
 setup(
     ext_modules=cythonize(
         [

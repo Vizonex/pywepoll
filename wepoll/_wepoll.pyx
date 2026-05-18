@@ -1,9 +1,9 @@
 # cython: freethreading_compatible = True
 cimport cython
 from cpython.exc cimport (
-    PyErr_CheckSignals, 
+    PyErr_CheckSignals,
     PyErr_SetFromErrno,
-    PyErr_SetFromWindowsErr, 
+    PyErr_SetFromWindowsErr,
     PyErr_SetObject
 )
 from cpython.long cimport PyLong_Check
@@ -20,17 +20,14 @@ from .wepoll cimport *
 # Inspired by the original 2006 cython epoll twisted code and CPython's vesion
 
 
-# TODO: make C-API Capsule in a later update and then migrate to CPython 
+# TODO: make C-API Capsule in a later update and then migrate to CPython
 # so that the cython functionality can at least be retained.
-
-
-
 
 
 cdef extern from "Python.h":
     """
 
-/* Dear CPython devs, please stop having me try to force my hand 
+/* Dear CPython devs, please stop having me try to force my hand
  * by performing Code injections I don't like this at all. */
 
 // 3.13 is cursed...
@@ -238,7 +235,7 @@ _PyTime_FromSecondsObject(_PyTime_t *tp, PyObject *obj, _PyTime_round_t round)
 {
     return pytime_from_object(tp, obj, round, SEC_TO_NS);
 }
- 
+
 #endif
 
 typedef _PyTime_round_t PyTime_round_t;
@@ -278,7 +275,7 @@ _PyTime_Add(int64_t t1, int64_t t2)
 }
 #define PyTime_Add _PyTime_Add
 """
-   
+
     enum _PyTime_round_t:
         # Round towards minus infinity (-inf).
         # For example, used to read a clock.
@@ -313,7 +310,6 @@ cdef PyTime_round_t PyTime_ROUND_CEILING = _PyTime_ROUND_CEILING
 cdef PyTime_round_t PyTime_ROUND_HALF_EVEN = _PyTime_ROUND_HALF_EVEN
 
 
-
 cdef extern from "windows.h" nogil:
     pass
 
@@ -343,12 +339,11 @@ cdef extern from "errno.h" nogil:
 DEF FD_SETSIZE = 512
 
 
- 
 # Keep final the same way select does on linux
 @cython.final
 cdef class epoll:
     # internal methods first then try mimicing python
-    # doing so this way allows us to create a 
+    # doing so this way allows us to create a
     # cpython capsule if we wish...
 
     cdef SOCKET _fd_from_object(self, object obj) except -1:
@@ -357,10 +352,10 @@ cdef class epoll:
             return (<socket>obj).sock_fd
         elif PyLong_Check(obj):
             return <SOCKET>obj
-        
+
         PyErr_SetObject(TypeError, f"{obj!r} not supported")
         return -1
-    
+
     # would've used nogil but it did not feel as clean as PyEval was
     cdef int _create(self, int sizehint) except -1:
         with nogil:
@@ -368,11 +363,11 @@ cdef class epoll:
         return -1 if self.handle == NULL else 0
 
     # TODO: Deprecate create1 in future update.
-    cdef int _create1(self) except -1: 
+    cdef int _create1(self) except -1:
         with nogil:
             self.handle = epoll_create1(0)
         return -1 if self.handle == NULL else 0
- 
+
     cdef int _close(self):
         cdef int ret
         with nogil:
@@ -380,8 +375,8 @@ cdef class epoll:
             if ret < 0:
                 wepoll_set_errno(ret)
         return ret
-    
-    # TODO: In the future I will provide a way to make it so that 
+
+    # TODO: In the future I will provide a way to make it so that
     # other types of data besides just sockets can get polled.
 
     cdef int _ctl(self, int op, SOCKET sock, epoll_event* event):
@@ -397,13 +392,14 @@ cdef class epoll:
     cdef int _wait(self, epoll_event* events, int maxevents, int timeout):
         with nogil:
             return epoll_wait(self.handle, events, maxevents, timeout)
-    
+
     cdef int _init(self, int sizehint, HANDLE handle):
         if handle == NULL:
             if sizehint > 0:
                 self._create(sizehint)
             else:
-                self._create1()
+                with nogil:
+                    self.handle = epoll_create1(0)
                 # optimzed version of _Py_set_inheritable for windows
                 if not SetHandleInformation(self.handle, HANDLE_FLAG_INHERIT, 0):
                     PyErr_SetFromWindowsErr(0)
@@ -413,29 +409,22 @@ cdef class epoll:
             self.handle = handle
         return 0
 
-
-    cdef int _handle_ctl_result(self, int result) except -1:
-        if result < 0:
-            wepoll_set_errno(result)
-            PyErr_SetFromErrno(OSError)
-            return -1
-        return 0
-    
-    cdef int _pools_closed(self) except -1:
-        if self.handle == NULL or self.closed:
+    cdef int _pools_closed(self):
+        if self.closed or (self.handle == NULL):
             # Pools closed due to aids
             PyErr_SetObject(RuntimeError, "I/O operation on closed epoll object")
             return -1
         return 0
- 
-    # NOTE Flags are deprecated in select standard library so no point in using it here...
+
+    # NOTE Flags are deprecated in select standard library
+    # so there was no point in using it here...
     def __init__(self, int sizehint = -1):
         if sizehint == -1:
             sizehint = FD_SETSIZE - 1
-        
+
         elif sizehint <= 0:
             raise ValueError("negative sizehint")
-        
+
         # NOTE: Throw me an issue if a memory leak is noticable.
         # I will then be able to diagnose if this was the reason.
         self.socket_api = cimport_socket()
@@ -446,28 +435,40 @@ cdef class epoll:
             raise
 
     cpdef uintptr_t fileno(self):
-        """Return the file descriptor number of the control fd.
-        on windows this recasts the handle to a `uintptr_t` to a 
-        PyLongObject (int)."""
+        """
+        Close the control file descriptor of the :class:`.epoll` object.
+
+        :raises OSError: if close fails.
+        """
         return <uintptr_t>self.handle
 
-
     cpdef object close(self):
-        """Close the control file descriptor of the epoll object.
+        """
+        Close the control file descriptor of the :class:`.epoll` object.
 
-        Raises:
-            OSError: if close fails.
+        :raises OSError: if close fails.
         """
         cdef int _errno
         if not self.closed:
             _errno = self._close()
             if _errno < 0:
-                wepoll_set_errno(_errno)
                 PyErr_SetFromErrno(OSError)
                 raise
             self.closed = True
-    
+
     cpdef object register(self, object fd, unsigned int eventmask):
+        """
+        Registers a file descriptor.
+
+        :param fd: a file descriptor to register. This can be either
+            a socket type or integer.
+        :param eventmask: A List of epoll flags to set to this file
+            descriptor.
+
+        :raises TypeError: if obtaining the file descriptor from the
+            python object fails or is an invalid type.
+        :rasies RuntimeError: if epoll is closed.
+        """
         cdef epoll_event ev
         cdef SOCKET _fd
 
@@ -478,22 +479,19 @@ cdef class epoll:
         ev.events = eventmask
         if self._ctl(EPOLL_CTL_ADD, _fd, &ev) < 0:
             raise
-            
-    cpdef object modify(self, object fd, unsigned int eventmask):
-        """Modify a registered file descriptor.
-        
-        Parameters
-        ----------
 
-        :param fd: a `socket` or `int` object of a file descriptor
+    cpdef object modify(self, object fd, unsigned int eventmask):
+        """
+        Modify a registered file descriptor.
+
+        :param fd: a file descriptor to register. This can be either
+            a socket type or integer.
         :param eventmask: A List of epoll flags to set for the modified fd.
 
-        Raises:
-            TypeError: if obtaining the file descriptor from the 
-                python object fails or is an invalid type.
+        :raises TypeError: if obtaining the file descriptor from the
+            python object fails or is an invalid type.
 
-            RuntimeError: if epoll is closed.
-
+        :rasies RuntimeError: if epoll is closed.
         """
         cdef epoll_event ev
         cdef SOCKET _fd
@@ -507,17 +505,11 @@ cdef class epoll:
 
     cpdef object unregister(self, object fd):
         """
-        Remove a registered file descriptor from the epoll object.
+        Remove a registered file descriptor from the :class:`.epoll` object.
 
-        Parameters
-        ----------
-
-        :param fd: a `socket` or `int` object of a file descriptor
-
-
-        Raises:
-            OSError: if unregistering the file descriptor fails.
-
+        :param fd: a file descriptor to unregister. This can be either
+            a socket type or integer.
+        :raises OSError: if unregistering the file descriptor fails.
         """
         cdef epoll_event ev
         if self._pools_closed() < 0:
@@ -528,19 +520,17 @@ cdef class epoll:
 
     cpdef list poll(self, object timeout = None, int maxevents = -1):
         """
-        Wait for events. timeout in seconds (float)
-        
-        Parameters
-        ----------
+        Wait for events using timeout in seconds.
 
         :param timeout: timeout in seconds (float or int)
-        :param maxevent: maximum number of events to listen for default is -1 which will be a varaious amount.
-            Passing -1 to maxevents is discouraged and should be left alone instead if chosen to omit or ignore
-        Raises:
-            TypeError: if timeout type is not supported
-            ValueError: if maxevents is less than -1 
 
+        :param maxevents: maximum number of events to listen for
+            default is -1 which will be a varaious amount.
+            Passing -1 to maxevents is discouraged and should
+            be left alone instead if chosen to omit or ignore
 
+        :raises TypeError: if timeout type is not supported
+        :raises ValueError: if maxevents is less than -1
         """
         cdef PyTime_t _timeout, deadline, ms
         cdef epoll_event *evs = NULL
@@ -554,17 +544,16 @@ cdef class epoll:
                 raise TypeError(f"{timeout!r} not supported")
 
             # add timeout by current time as a monotonic clock using Python's
-            # Normal API So that we can mimic linux's python epoll system. 
-            
+            # Normal API So that we can mimic linux's python epoll system.
+
             ms = _PyTime_AsMilliseconds(_timeout, _PyTime_ROUND_CEILING)
             if ms < INT_MIN or ms > INT_MAX:
                 raise OverflowError("timeout is too large")
             if ms < 0:
                 ms = -1
-            
+
             if _timeout >= 0:
                 deadline = PyTime_Add(monotonic_ns(), _timeout)
-            
 
         if maxevents == -1:
             maxevents = FD_SETSIZE - 1
@@ -577,7 +566,7 @@ cdef class epoll:
         try:
             while True:
                 with nogil:
-                    errno = 0
+                    wepoll_set_errno(0)
                     nfds = epoll_wait(handle, evs, maxevents, <int>ms)
 
                 if nfds > 0:
@@ -601,27 +590,35 @@ cdef class epoll:
             return [(evs[i].data.fd, evs[i].events) for i in range(nfds)]
         finally:
             PyMem_Free(evs)
-        
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args):
         self.close()
-    
+
     def __dealloc__(self):
         self.close()
-    
+
     @classmethod
-    def fromfd(cls, int fd):
-        """creates a epoll (wepoll) from msvcrt using _get_osfhandle(fd) 
-        from `io.h` in C to get the file descriptor's handle"""
+    def fromfd(cls, int fd, /):
+        """
+        creates a :class:`.epoll` from msvcrt using `_get_osfhandle`
+        from `io.h` in C to get the file descriptor's handle.
+        This function does not audit in order to increase performance
+
+        :param fd: the file descriptor to create an :class:`.epoll` using.
+
+        :raises OSError: if `_get_osfhandle` fails
+        :raises WindowsError: if initialization after obtaining the handle fails.
+        """
         cdef epoll poll = PyType_GenericAlloc(cls, 0)
         cdef void* handle
 
         if get_osfhandle(&handle, fd) < 0:
             # Reraise the OS Error we had setup previously...
-            raise 
+            raise
 
         if poll._init(FD_SETSIZE - 1, handle) < 0:
             raise
-        return poll    
+        return poll

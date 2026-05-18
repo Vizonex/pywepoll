@@ -1,7 +1,9 @@
 import selectors
 import tempfile
 import unittest
-from test.test_selectors import ScalableSelectorMixIn, BaseSelectorTestCase
+
+from test.test_selectors import BaseSelectorTestCase, ScalableSelectorMixIn
+
 from wepoll import EpollSelector
 
 # Code is borrowed from python's testsuite to ensure wepoll matches up with unix epolls
@@ -22,7 +24,7 @@ class EpollSelectorTestCase(
             m.return_value.modify = unittest.mock.Mock(side_effect=ZeroDivisionError)
             s = self.SELECTOR()
             self.addCleanup(s.close)
-            rd, wr = self.make_socketpair()
+            rd, _ = self.make_socketpair()
             s.register(rd, selectors.EVENT_READ)
             self.assertEqual(len(s._map), 1)
             with self.assertRaises(ZeroDivisionError):
@@ -38,7 +40,7 @@ class EpollSelectorTestCase(
             # the SelectorKey has been removed
             with self.assertRaises(KeyError):
                 s.get_key(f)
-    
+
     def test_empty_select(self):
         # Issue #23009: Make sure EpollSelector.select() works when no FD is
         # registered.

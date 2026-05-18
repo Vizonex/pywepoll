@@ -2,7 +2,11 @@ from asyncio.selector_events import BaseSelectorEventLoop
 
 from .selector import EpollSelector
 
-__all__ = ("WepollEventLoop",)
+__all__ = (
+    "new_event_loop",
+    "WepollEventLoop",
+)
+
 
 class WepollEventLoop(BaseSelectorEventLoop):
     """
@@ -13,3 +17,7 @@ class WepollEventLoop(BaseSelectorEventLoop):
 
     def __init__(self):
         super().__init__(EpollSelector())
+
+def new_event_loop() -> WepollEventLoop:
+    """return a new event loop."""
+    return WepollEventLoop()

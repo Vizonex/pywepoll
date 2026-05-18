@@ -29,3 +29,7 @@ packages = ['wepoll']
 [project.urls]
     homepage = "https://github.com/Vizonex/pywepoll"
     repository = "https://github.com/Vizonex/pywepoll.git"
+
+[tool.cython-lint]
+max-line-length = 88
+

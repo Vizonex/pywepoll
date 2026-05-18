@@ -5,7 +5,7 @@ from libc.stdint cimport uintptr_t as uintptr_t
 
 cdef extern from "wepoll.h" nogil:
     enum EPOLL_EVENTS:
-        EPOLLIN  = 1
+        EPOLLIN = 1
         EPOLLPRI = 2
         EPOLLOUT = 4
         EPOLLERR = 8
@@ -35,7 +35,7 @@ cdef extern from "wepoll.h" nogil:
         uint32_t events
         epoll_data_t data
 
-    # Documentation was copied over from wepoll's readme 
+    # Documentation was copied over from wepoll's readme
     # to help any user troubleshooting this library.
 
     HANDLE epoll_create(int size)
@@ -66,7 +66,7 @@ cdef extern from "wepoll.h" nogil:
     #   As on Linux, closed sockets are automatically removed from the epoll set, but
     #   wepoll may not be able to detect that a socket was closed until the next call
     #   to epoll_wait()
-    
+
     int epoll_wait(HANDLE ephnd, epoll_event* events, int maxevents, int timeout)
     # Receive socket events from an epoll port.
     # * `events` should point to a caller-allocated array of
@@ -82,5 +82,3 @@ cdef extern from "wepoll.h" nogil:
     #   - `-1` an error occurred
     #   - `0`  timed out without any events to report
     #   - `≥1` the number of events stored in the `events` buffer
-
-

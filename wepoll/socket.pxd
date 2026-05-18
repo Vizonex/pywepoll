@@ -2,8 +2,8 @@ from cpython.object cimport PyObject, PyTypeObject
 from cpython.time cimport PyTime_t
 from libc.stdint cimport uintptr_t
 
-# After carefully observing socketmodule.h over from CPython and some 
-# different versions of python I've determined it might be possible to 
+# After carefully observing socketmodule.h over from CPython and some
+# different versions of python I've determined it might be possible to
 # expose this data to the cython api by simply copying off socketmodule.h
 # otherwise a simple array hack utilized form Cython shoud do the trick.
 
@@ -32,7 +32,8 @@ typedef int SOCKET_T;
 #       define SIZEOF_SOCKET_T SIZEOF_INT
 #endif
 
-/* Didn't need to recast the entire object only the parts that I thought were useful... */
+/* Didn't need to recast the entire object.
+ * Only recast the parts that I thought were useful... */
 typedef struct {
     PyObject_HEAD
     SOCKET_T sock_fd;
@@ -59,8 +60,8 @@ PySocketModule_APIObject* cimport_socket(){
 }
 
 int import_socket(){
-    /* PySocketModule_ImportModuleAndAPI Macro was not required 
-     * we need the import to block incase of failure */ 
+    /* PySocketModule_ImportModuleAndAPI Macro was not required
+     * we need the import to block incase of failure */
     __cython_socket_api = PyCapsule_Import(PySocket_CAPSULE_NAME, 0);
     return __cython_socket_api != NULL;
 }
@@ -68,14 +69,20 @@ int import_socket(){
 
 static inline int SocketType_CheckExact(PyObject* obj) {
     if (__cython_socket_api != NULL){
-        return Py_IS_TYPE(obj, __cython_socket_api->Sock_Type);    
+        return Py_IS_TYPE(obj, __cython_socket_api->Sock_Type);
     }
-    PyErr_SetString(PyExc_ImportError, "Required CPython Capsule _socket.CAPI was not imported");
+    PyErr_SetString(
+        PyExc_ImportError,
+        "Required CPython Capsule _socket.CAPI was not imported"
+    );
     return -1;
 }
 
 static inline int SocketType_Check(PyObject* obj) {
-    return SocketType_CheckExact(obj) || PyObject_TypeCheck(obj,  __cython_socket_api->Sock_Type);
+    return (
+        SocketType_CheckExact(obj) ||
+        PyObject_TypeCheck(obj,  __cython_socket_api->Sock_Type)
+    );
 }
 
 static inline int Socket_GetFileDescriptor(PyObject* sock, uintptr_t *fd){
@@ -90,25 +97,25 @@ static inline int Socket_GetFileDescriptor(PyObject* sock, uintptr_t *fd){
     ctypedef uintptr_t SOCKET_T
 
     ctypedef struct PySocketSockObject:
-        SOCKET_T sock_fd # Socket file descriptor
-        int sock_family       # Address family, e.g., AF_INET
-        int sock_type         # Socket type, e.g., SOCK_STREAM
-        int sock_proto        # Protocol type, usually 0
-        PyObject* (*errorhandler)() except NULL # Error handler; checks
-                                         #   errno, returns NULL and
-                                         #   sets a Python exception
-        PyTime_t sock_timeout       # Operation timeout in seconds
-                                        # 0.0 means non-blocking
-    
+        SOCKET_T sock_fd  # Socket file descriptor
+        int sock_family  # Address family, e.g., AF_INET
+        int sock_type  # Socket type, e.g., SOCK_STREAM
+        int sock_proto  # Protocol type, usually 0
+        PyObject* (*errorhandler)() except NULL  # Error handler; checks
+        # errno, returns NULL and
+        # sets a Python exception
+        PyTime_t sock_timeout  # Operation timeout in seconds
+        # 0.0 means non-blocking
+
     ctypedef struct PySocketModule_APIObject:
         PyTypeObject *Sock_Type
         PyObject *error
         PyObject *timeout_error
-    
+
     int Socket_GetFileDescriptor(object sock, uintptr_t *fd)
 
     # Global
-    PySocketModule_APIObject* __cython_socket_api 
+    PySocketModule_APIObject* __cython_socket_api
 
     ctypedef class _socket.socket [object PySocketSockObject, check_size ignore]:
         cdef:
@@ -118,28 +125,29 @@ static inline int Socket_GetFileDescriptor(PyObject* sock, uintptr_t *fd){
             @property
             cdef inline const int family(self):
                 return self.sock_family
-            
+
             @property
             cdef inline const int type(self):
                 return self.sock_type
-            
+
             @property
             cdef inline PyTime_t timeout(self):
                 return self.sock_timeout
 
     int import_socket() except 0
-    # imports _socket.CAPI this function is important to import first thing after cimport is finished
-    
+    # imports _socket.CAPI this function is important to import
+    # first thing after cimport is finished
+
     int SocketType_CheckExact(object obj) except -1
     # checks if python type matches _socket.socket exactly
     # - 0 if False
-    # - 1 if True 
+    # - 1 if True
     # - -1 if CAPI did not import raises ImportError
 
     int SocketType_Check(object obj) except -1
-    # checks if python type is socket.socket or a subclass 
+    # checks if python type is socket.socket or a subclass
     # - 0 if False
-    # - 1 if True 
+    # - 1 if True
     # - -1 if object is NULL
 
     PySocketModule_APIObject* cimport_socket() except NULL
