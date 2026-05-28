@@ -2,7 +2,7 @@ anyio==4.13.0
 colorama==0.4.6
 cyares==0.7.0
 cython==3.2.5
-deprecated-params==0.7.0
+deprecated-params==0.8.0
 exceptiongroup==1.3.1
 idna==3.16
 iniconfig==2.3.0
