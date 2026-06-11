@@ -20,7 +20,7 @@ class TestCyaresWepoll:
 
         while self.channel.running_queries:
             timeout = self.channel.timeout()
-            if timeout == 0.0:
+            if not timeout:
                 self.channel.process_no_fds()
                 continue
             for fd, event in self.poll.poll(timeout):

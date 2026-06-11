@@ -24,7 +24,7 @@ from .wepoll cimport *
 # so that the cython functionality can at least be retained.
 
 
-cdef extern from "Python.h":
+cdef extern from "Python.h" nogil:
     """
 
 /* Dear CPython devs, please stop having me try to force my hand
@@ -571,21 +571,22 @@ cdef class epoll:
 
                 if nfds > 0:
                     break
-
+                
                 elif nfds < 0:
                     PyErr_SetFromErrno(OSError)
                     raise
-
+                
                 # check for ctrl+C from end user wanting to stop program
                 if PyErr_CheckSignals() < 0:
                     raise
 
-                if timeout >= 0:
-                    timeout = deadline - monotonic_ns()
-                    if (timeout < 0):
+                if _timeout >= 0:
+                    _timeout = deadline - monotonic_ns()
+                    if (_timeout < 0):
                         nfds = 0
                         break
-                    ms = _PyTime_AsMilliseconds(timeout, _PyTime_ROUND_CEILING)
+                    
+                    ms = _PyTime_AsMilliseconds(_timeout, _PyTime_ROUND_CEILING)
 
             return [(evs[i].data.fd, evs[i].events) for i in range(nfds)]
         finally:
@@ -594,7 +595,7 @@ cdef class epoll:
     def __enter__(self):
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args, **kw):
         self.close()
 
     def __dealloc__(self):
