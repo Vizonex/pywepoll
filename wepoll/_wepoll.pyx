@@ -358,20 +358,25 @@ cdef class epoll:
 
     # would've used nogil but it did not feel as clean as PyEval was
     cdef int _create(self, int sizehint) except -1:
+        cdef void* handle
         with nogil:
-            self.handle = epoll_create(sizehint)
+            handle = epoll_create(sizehint)
+        self.handle = handle
         return -1 if self.handle == NULL else 0
 
     # TODO: Deprecate create1 in future update.
     cdef int _create1(self) except -1:
+        cdef void* handle
         with nogil:
-            self.handle = epoll_create1(0)
+            handle = epoll_create1(0)
+        self.handle = handle
         return -1 if self.handle == NULL else 0
 
     cdef int _close(self):
         cdef int ret
+        cdef void* handle = self.handle
         with nogil:
-            ret = epoll_close(self.handle)
+            ret = epoll_close(handle)
             if ret < 0:
                 wepoll_set_errno(ret)
         return ret
@@ -381,8 +386,9 @@ cdef class epoll:
 
     cdef int _ctl(self, int op, SOCKET sock, epoll_event* event):
         cdef int ret
+        cdef void* handle = self.handle
         with nogil:
-            ret = epoll_ctl(self.handle, op, sock, event)
+            ret = epoll_ctl(handle, op, sock, event)
 
         if ret < 0:
             PyErr_SetFromErrno(OSError)
@@ -390,8 +396,9 @@ cdef class epoll:
         return ret
 
     cdef int _wait(self, epoll_event* events, int maxevents, int timeout):
+        cdef void* handle = self.handle
         with nogil:
-            return epoll_wait(self.handle, events, maxevents, timeout)
+            return epoll_wait(handle, events, maxevents, timeout)
 
     cdef int _init(self, int sizehint, HANDLE handle):
         if handle == NULL:
@@ -399,11 +406,12 @@ cdef class epoll:
                 self._create(sizehint)
             else:
                 with nogil:
-                    self.handle = epoll_create1(0)
+                    handle = epoll_create1(0)
                 # optimzed version of _Py_set_inheritable for windows
-                if not SetHandleInformation(self.handle, HANDLE_FLAG_INHERIT, 0):
+                if not SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0):
                     PyErr_SetFromWindowsErr(0)
                     return -1
+                self.handle = handle
         else:
             self.closed = 0
             self.handle = handle
