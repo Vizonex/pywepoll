@@ -7,7 +7,6 @@ on:
         required: false
         default: false
         type: boolean
-  pull_request:
 
 permissions:
   pull-requests: write
