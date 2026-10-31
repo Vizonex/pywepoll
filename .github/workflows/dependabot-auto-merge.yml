@@ -1,5 +1,12 @@
 name: Dependabot auto-merge
-on: pull_request
+on:
+  workflow_call:
+    inputs:
+      fail-fast:
+        description: If the workflow should fail or not
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   pull-requests: write
