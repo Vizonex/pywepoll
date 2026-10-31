@@ -7,11 +7,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependabot:
-    uses: ./.github/workflows/run-cibuildwheel.yml
-    with:
-      fail-fast: true
-
   build:
     name: Test on ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
