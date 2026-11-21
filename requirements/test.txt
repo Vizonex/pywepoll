@@ -1,6 +1,6 @@
 anyio==4.15.1
 colorama==0.4.6
-cyares==0.9.0
+# cyares==0.9.0 XXX: Disabled until further notice.
 cython==3.3.0
 deprecated-params==0.9.0
 exceptiongroup==1.3.1

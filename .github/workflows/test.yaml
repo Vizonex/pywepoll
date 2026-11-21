@@ -1,10 +1,22 @@
 # NOTE I'm borrowing from pycares & cyares so that we don't have to reinvent the wheel.
 name: Test
-on: [pull_request, push]
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+  contents: write
+
 
 jobs:
   build:
@@ -44,3 +56,19 @@ jobs:
         PIP_USER: 1
       run: pytest -vv
       shell: bash
+
+  dependabot:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3.1.0
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Enable auto-merge for Dependabot PRs
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
